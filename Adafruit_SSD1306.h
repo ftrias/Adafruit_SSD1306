@@ -24,6 +24,9 @@
 #ifndef _Adafruit_SSD1306_H_
 #define _Adafruit_SSD1306_H_
 
+// VINDOR
+// #define BLOCK_SEND
+
 // ONE of the following three lines must be #defined:
 //#define SSD1306_128_64 ///< DEPRECTAED: old way to specify 128x64 screen
 #define SSD1306_128_32   ///< DEPRECATED: old way to specify 128x32 screen
@@ -36,7 +39,9 @@
   typedef class HardwareSPI SPIClass;
 #endif
 
-#include <Wire.h>
+// VINDOR
+#include "MyWire.h"
+// #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 
@@ -134,6 +139,7 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
                  uint8_t i2caddr=0, boolean reset=true,
                  boolean periphBegin=true);
   void         display(void);
+  bool         sendBlock();
   void         clearDisplay(void);
   void         invertDisplay(boolean i);
   void         dim(boolean dim);
@@ -157,6 +163,11 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
                  uint16_t color);
   void         ssd1306_command1(uint8_t c);
   void         ssd1306_commandList(const uint8_t *c, uint8_t n);
+
+// VINDOR
+#ifdef BLOCK_SEND
+  int          block_send = -1;
+#endif
 
   SPIClass    *spi;
   TwoWire     *wire;

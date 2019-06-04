@@ -906,6 +906,10 @@ void Adafruit_SSD1306::display(void) {
   uint16_t count = WIDTH * ((HEIGHT + 7) / 8);
   uint8_t *ptr   = buffer;
   if(wire) { // I2C
+// VINDOR
+#ifdef BLOCK_SEND
+    block_send = 0;
+#else
     wire->beginTransmission(i2caddr);
     WIRE_WRITE((uint8_t)0x40);
     uint8_t bytesOut = 1;
@@ -920,6 +924,7 @@ void Adafruit_SSD1306::display(void) {
       bytesOut++;
     }
     wire->endTransmission();
+#endif
   } else { // SPI
     SSD1306_MODE_DATA
     while(count--) SPIwrite(*ptr++);
@@ -929,6 +934,33 @@ void Adafruit_SSD1306::display(void) {
   yield();
 #endif
 }
+
+// VINDOR
+#ifdef BLOCK_SEND
+bool Adafruit_SSD1306::sendBlock() {
+  const int count = WIDTH * ((HEIGHT + 7) / 8);
+  if (block_send == -1) return false;
+  if (block_send >= count) {
+    block_send = -1;
+    return false;
+  }
+  // send a bunch of data in one xmission
+  Wire.beginTransmission(i2caddr);
+  WIRE_WRITE(0x40);
+  for (uint8_t x=0; x<WIRE_MAX; x++) {
+    WIRE_WRITE(buffer[block_send]);
+    if (++block_send >= count) {
+      block_send = -1;
+      break;
+    }
+  }
+  if (Wire.endTransmission() != 0) {
+    block_send = -1;
+    return false;
+  }
+  return true;
+}
+#endif
 
 // SCROLLING FUNCTIONS -----------------------------------------------------
 

@@ -909,6 +909,7 @@ void Adafruit_SSD1306::display(void) {
 // VINDOR
 #ifdef BLOCK_SEND
     block_send = 0;
+    block_status = 0;
 #else
     wire->beginTransmission(i2caddr);
     WIRE_WRITE((uint8_t)0x40);
@@ -945,16 +946,17 @@ bool Adafruit_SSD1306::sendBlock() {
     return false;
   }
   // send a bunch of data in one xmission
-  Wire.beginTransmission(i2caddr);
+  wire->beginTransmission(i2caddr);
   WIRE_WRITE(0x40);
-  for (uint8_t x=0; x<WIRE_MAX; x++) {
+  for (uint8_t x=0; x<16; x++) {
     WIRE_WRITE(buffer[block_send]);
     if (++block_send >= count) {
       block_send = -1;
       break;
     }
   }
-  if (Wire.endTransmission() != 0) {
+  block_status = wire->endTransmission();
+  if (block_status != 0) {
     block_send = -1;
     return false;
   }

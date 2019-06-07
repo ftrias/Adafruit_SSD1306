@@ -25,7 +25,7 @@
 #define _Adafruit_SSD1306_H_
 
 // VINDOR
-// #define BLOCK_SEND
+#define BLOCK_SEND
 
 // ONE of the following three lines must be #defined:
 //#define SSD1306_128_64 ///< DEPRECTAED: old way to specify 128x64 screen
@@ -155,6 +155,12 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
   boolean      getPixel(int16_t x, int16_t y);
   uint8_t     *getBuffer(void);
 
+// VINDOR
+#ifdef BLOCK_SEND
+  int          block_send = -1;
+  int          block_status = 0;
+#endif
+
  private:
   inline void  SPIwrite(uint8_t d) __attribute__((always_inline));
   void         drawFastHLineInternal(int16_t x, int16_t y, int16_t w,
@@ -163,11 +169,6 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
                  uint16_t color);
   void         ssd1306_command1(uint8_t c);
   void         ssd1306_commandList(const uint8_t *c, uint8_t n);
-
-// VINDOR
-#ifdef BLOCK_SEND
-  int          block_send = -1;
-#endif
 
   SPIClass    *spi;
   TwoWire     *wire;

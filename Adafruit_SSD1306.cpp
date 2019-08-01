@@ -229,7 +229,7 @@ void Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr, bool reset) {
   }
 
   // Init sequence
-  ssd1306_command(SSD1306_RESET);                         // 0xE4
+  // ssd1306_command(SSD1306_RESET);                         // 0xE4
   ssd1306_command(SSD1306_DISPLAYOFF);                    // 0xAE
   ssd1306_command(SSD1306_SETDISPLAYCLOCKDIV);            // 0xD5
   ssd1306_command(0x80);                                  // the suggested ratio 0x80
@@ -420,9 +420,9 @@ void Adafruit_SSD1306::dim(boolean dim) {
   ssd1306_command(contrast);
 }
 
-void Adafruit_SSD1306::display(void) {
+void Adafruit_SSD1306::sendDownloadStart(int page) {
   ssd1306_command(SSD1306_COLUMNADDR);
-  ssd1306_command(0);   // Column start address (0 = reset)
+  ssd1306_command(page);   // Column start address (0 = reset)
   ssd1306_command(SSD1306_LCDWIDTH-1); // Column end address (127 = reset)
 
   ssd1306_command(SSD1306_PAGEADDR);
@@ -436,6 +436,14 @@ void Adafruit_SSD1306::display(void) {
   #if SSD1306_LCDHEIGHT == 16
     ssd1306_command(1); // Page end address
   #endif
+}
+
+bool Adafruit_SSD1306::display(void) {
+  static bool active = false;
+  if (active) return false;
+  active = true;
+
+  sendDownloadStart(0);
 
   if (sid != -1)
   {
@@ -462,12 +470,6 @@ void Adafruit_SSD1306::display(void) {
   else
   {
     // save I2C bitrate
-// VINDOR
-#ifdef DISPLAY_BLOCK_SEND
-    block_send = 0;
-    block_status = 0;
-#else
-
 #ifdef TWBR
     uint8_t twbrbackup = TWBR;
     TWBR = 12; // upgrade to 400KHz!
@@ -486,74 +488,19 @@ void Adafruit_SSD1306::display(void) {
         i++;
       }
       i--;
-      Wire.endTransmission();
+      if (Wire.endTransmission() != 0) {
+        active = false;
+        return false;
+      }
     }
 
 #ifdef TWBR
     TWBR = twbrbackup;
 #endif
-
-#endif // DISPLAY_BLOCK_SEND
   }
-}
-
-#ifdef DISPLAY_BLOCK_SEND
-bool Adafruit_SSD1306::sendBlock() {
-  if (block_send != 0) return true;
-
-#ifdef TWBR
-    uint8_t twbrbackup = TWBR;
-    TWBR = 12; // upgrade to 400KHz!
-#endif
-
-  for (uint16_t i=0; i<(SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8); i++) {
-    // send a bunch of data in one xmission
-    Wire.beginTransmission(_i2caddr);
-    WIRE_WRITE(0x40);
-    for (uint8_t x=0; x<16; x++) {
-      WIRE_WRITE(buffer[i]);
-      i++;
-    }
-    i--;
-    block_status = Wire.endTransmission();
-  }
-
-#ifdef TWBR
-    TWBR = twbrbackup;
-#endif
-
-  block_send = -1;
-  return block_status == 0;
-}
-#endif
-
-// VINDOR
-#ifdef XDISPLAY_BLOCK_SEND
-bool Adafruit_SSD1306::sendBlock() {
-  const int count = SSD1306_LCDWIDTH * SSD1306_LCDHEIGHT / 8;
-  if (block_send == -1) return false;
-  if (block_send >= count) {
-    block_send = -1;
-    return false;
-  }
-  // send a bunch of data in one xmission
-  Wire.beginTransmission(_i2caddr);
-  WIRE_WRITE(0x40);
-  for (uint8_t x=0; x<16; x++) {
-    WIRE_WRITE(buffer[block_send]);
-    if (++block_send >= count) {
-      block_send = -1;
-      break;
-    }
-  }
-  block_status = Wire.endTransmission();
-  if (block_status != 0) {
-    block_send = -1;
-    return false;
-  }
+  active = false;
   return true;
 }
-#endif
 
 // clear everything
 void Adafruit_SSD1306::clearDisplay(void) {

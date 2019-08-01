@@ -156,7 +156,9 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
 
   void clearDisplay(void);
   void invertDisplay(uint8_t i);
-  void display();
+  bool display();
+
+  void sendDownloadStart(int page);
 
   void startscrollright(uint8_t start, uint8_t stop);
   void startscrollleft(uint8_t start, uint8_t stop);
@@ -171,13 +173,6 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
 
   virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color);
   virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color);
-
-// VINDOR
-#ifdef DISPLAY_BLOCK_SEND
-  bool         sendBlock();
-  int          block_send = -1;
-  int          block_status = 0;
-#endif
 
  private:
   int8_t _i2caddr, _vccstate, sid, sclk, dc, rst, cs;

@@ -438,7 +438,33 @@ void Adafruit_SSD1306::sendDownloadStart(int page) {
   #endif
 }
 
-bool Adafruit_SSD1306::display(void) {
+#ifdef DISPLAY_BLOCK_SEND
+
+int Adafruit_SSD1306::sendBlock(int start) {
+  if (block_place < 0) return 0;
+  int i = block_place;
+  Wire.beginTransmission(_i2caddr);
+  WIRE_WRITE(0x40);
+  for (uint8_t x=0; x<16; x++) {
+    WIRE_WRITE(buffer[i]);
+    i++;
+  }
+  // i--;
+  if (i >= (SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8)) {
+    block_place = -1;
+    return 0;
+  }
+  if (Wire.endTransmission() != 0) {
+    block_place = -1;
+    return -1;
+  }
+  block_place = i;
+  return i-1;
+}
+
+#endif
+
+bool Adafruit_SSD1306::display() {
   static bool active = false;
   if (active) return false;
   active = true;
@@ -480,6 +506,15 @@ bool Adafruit_SSD1306::display(void) {
 
     // I2C
     for (uint16_t i=0; i<(SSD1306_LCDWIDTH*SSD1306_LCDHEIGHT/8); i++) {
+#ifdef DISPLAY_BLOCK_SEND
+      block_place = 0;
+      i = sendBlock(i==0?-1:0);
+      if (i < 0) {
+        active = false;
+        return false;
+      }
+      if (i == 0) break;
+#else
       // send a bunch of data in one xmission
       Wire.beginTransmission(_i2caddr);
       WIRE_WRITE(0x40);
@@ -492,6 +527,7 @@ bool Adafruit_SSD1306::display(void) {
         active = false;
         return false;
       }
+#endif
     }
 
 #ifdef TWBR

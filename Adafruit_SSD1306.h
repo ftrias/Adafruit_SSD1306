@@ -158,6 +158,11 @@ class Adafruit_SSD1306 : public Adafruit_GFX {
   void invertDisplay(uint8_t i);
   bool display();
 
+#ifdef DISPLAY_BLOCK_SEND
+  int block_place = -1;
+  int sendBlock(int i = 0);
+#endif
+
   void sendDownloadStart(int page);
 
   void startscrollright(uint8_t start, uint8_t stop);

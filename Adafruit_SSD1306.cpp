@@ -331,6 +331,38 @@ void Adafruit_SSD1306::ssd1306_command(uint8_t c) {
   }
 }
 
+int Adafruit_SSD1306::ssd1306_command_status(uint8_t c) {
+  if (sid != -1)
+  {
+    // SPI
+#ifdef HAVE_PORTREG
+    *csport |= cspinmask;
+    *dcport &= ~dcpinmask;
+    *csport &= ~cspinmask;
+#else
+    digitalWrite(cs, HIGH);
+    digitalWrite(dc, LOW);
+    digitalWrite(cs, LOW);
+#endif
+    fastSPIwrite(c);
+#ifdef HAVE_PORTREG
+    *csport |= cspinmask;
+#else
+    digitalWrite(cs, HIGH);
+#endif
+    return 0;
+  }
+  else
+  {
+    // I2C
+    uint8_t control = 0x00;   // Co = 0, D/C = 0
+    Wire.beginTransmission(_i2caddr);
+    Wire.write(control);
+    Wire.write(c);
+    return Wire.endTransmission();
+  }
+}
+
 // startscrollright
 // Activate a right handed scroll for rows start through stop
 // Hint, the display is 16 rows tall. To scroll the whole display, run:
